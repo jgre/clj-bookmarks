@@ -49,14 +49,13 @@
   (recent [srv]
 	  "To get the most recent bookmarks saved to the service by
           all users call `recent`.")
-  (add-bookmark [srv url opts]
+  (add-bookmark [srv url desc opts]
 		"Bookmarks can be added by calling `add-bookmark` for
-                the service, passing a URL and a map of options that
-                can have the following keys (none of them required):
+                the service, passing a URL, a description and a map of
+                options that can have the following keys (none of them
+                required):
 
                 * `tags`: a seq of tags
-                * `desc`: a string to be saved as description for
-                          the bookmark
                 * `date`: the datestamp assigned to the bookmark
                           (default: now)
                 * `shared`: make the item public (default: true)

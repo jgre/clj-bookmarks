@@ -51,4 +51,49 @@
 			       :start   0
 			       :results 5})
   => {:body javadoc-posts}))
-					    
+
+(def done-xml "
+<?xml version='1.0' encoding='UTF-8' ?>
+    <result code='done' />
+<!-- generated 01/03/11 18:01:45 UTC -->
+")
+
+(def error-xml "
+<?xml version='1.0' encoding='UTF-8' ?>
+    <result code='something went wrong' />
+<!-- generated 01/03/11 18:01:09 UTC -->
+")
+
+(fact
+ (parse-result done-xml) => truthy
+ (parse-result error-xml) => (throws Exception "something went wrong"))
+
+(def suggest-xml "
+<?xml version='1.0' encoding='UTF-8' ?>
+<suggested>
+	<popular>data</popular>
+	<popular>database</popular>
+	<popular>mapreduce</popular>
+	<recommended>hadoop</recommended>
+	<recommended>bigdata</recommended>
+	<recommended>data</recommended>
+	<recommended>mapreduce</recommended>
+	<recommended>database</recommended>
+	<recommended>storage</recommended>
+	<recommended>nosql</recommended>
+	<recommended>smaq</recommended>
+	<recommended>datamining</recommended>
+	<recommended>query</recommended>
+</suggested>
+")
+
+(fact
+ (parse-suggestions suggest-xml) =>
+ (contains ["data" "mapreduce" "hadoop" "smaq" "query"] :gaps-ok))
+
+(def update-xml "
+<?xml version='1.0' encoding='UTF-8'?><update time='2011-01-03T19:15:09Z' />
+")
+
+(fact
+ (parse-update update-xml) => #(= (.getTime %) 1294082109000))
