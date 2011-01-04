@@ -12,15 +12,16 @@
   (:import [java.net URL]
 	   [java.util TimeZone Date]
 	   [java.text SimpleDateFormat]
-	   [java.io ByteArrayInputStream]
+	   [java.io StringReader]
+	   [org.xml.sax InputSource]
 	   [java.security MessageDigest]))
 
 (def *base-rss-url* "http://feeds.pinboard.in/rss/")
 (def *base-api-url* "https://api.pinboard.in/v1/")
 
-(defn string->stream
+(defn string->input-source
   [s]
-  (ByteArrayInputStream. (.getBytes (.trim s))))
+  (InputSource. (StringReader. (.trim s))))
 
 (defn date-format
   []
@@ -55,7 +56,7 @@
 (defn str->xmlzip
   [input]
   (-> input
-      string->stream
+      string->input-source
       xml/parse
       zip/xml-zip))
 
