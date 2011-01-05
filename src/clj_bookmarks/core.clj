@@ -88,3 +88,5 @@
 ;; * `others`: the number of users who bookmarked the URL
 ;; * `hash`: the hash of the URL
 ;; * `meta`: a signature that changes when the bookmark is updated
+;;
+;; Only `url` is always set.

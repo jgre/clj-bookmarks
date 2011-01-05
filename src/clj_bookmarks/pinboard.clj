@@ -28,6 +28,11 @@
   (doto (SimpleDateFormat. "yyyy-MM-dd'T'HH:mm:ss'Z'")
     (.setTimeZone (TimeZone/getTimeZone "UTC"))))
 
+(defn rss-date-format
+  []
+  (doto (SimpleDateFormat. "yyyy-MM-dd'T'HH:mm:ss")
+    (.setTimeZone (TimeZone/getTimeZone "UTC"))))
+
 (defn format-date
   [d]
   (.format (date-format) d))
@@ -141,26 +146,87 @@
       :body
       parse-update))
 
+(defn parse-rss-date
+  [input]
+  (.parse (rss-date-format) input))
+
+(defn parse-rss-posts
+  [input]
+  (zf/xml-> (str->xmlzip input) :item
+	    (fn [loc] {:url (zf/xml1-> loc :link zf/text)
+		       :tags (string/split (zf/xml1-> loc :dc:subject zf/text) #"\s")
+		       :desc (zf/xml1-> loc :description zf/text)
+		       :date (parse-rss-date (zf/xml1-> loc :dc:date zf/text))
+		       })))
+
+(defn rss-popular
+  []
+  (-> (http/get (str *base-rss-url* "popular/"))
+      :body
+      parse-rss-posts))
+
+(defn rss-recent
+  []
+  (-> (http/get (str *base-rss-url* "recent/"))
+      :body
+      parse-rss-posts))
+
+(defn rss-bookmarks
+  "The `rss-bookmarks` function uses the RSS feeds to perform a query
+  for shared bookmarks.
+
+  Only the parameters `tags` and `user` are used.
+
+  This function sends a GET request with the path `/u:USER/t:TAG/t:TAG`."
+  [{:keys [tags user]}]
+  (let [tags (if (string? tags) [tags] tags)
+	path (string/join "/" (cons  (if user (str "u:" user))
+				     (map #(str "t:" %) tags)))] 
+    (-> (http/get (str *base-rss-url* path))
+	:body
+	parse-rss-posts)))
+
 ;; ## The PinboardService Record
 ;; 
-;; `PinboardService` implements the `BookmarkService` protocol for Pinboard.
+;; `PinboardService` implements the `BookmarkService` protocol for the
+;; Pinboard API. Requires authentication (username, password).
 
 (defrecord PinboardService [user passwd]
   BookmarkService
   (bookmarks [srv opts]
 	     ;; Retrieving bookmarks uses the `/posts/all` API call
 	     (posts-all srv opts))
-  (popular [srv] nil)
-  (recent [srv] nil)
+  (popular [srv] (rss-popular))
+  (recent [srv] (rss-recent))
   (add-bookmark [srv url desc opts] (posts-add srv url desc opts))
   (bookmark-info [srv url] (posts-get srv url))
   (delete-bookmark [srv url] (posts-delete srv url))
   (suggested-tags [srv url] (posts-suggest srv url))
   (last-update [srv] (posts-update srv)))
 
+(defn login-required
+  "Throw an exception to indicate that an API call requires authentication."
+  []
+  (throw (UnsupportedOperationException. "Authentication required")))
 
-		    (defn init-pinboard
-		      "Create a service handle for [Pinboard](http://pinboard.in).
+;; ## The PinboardRSSService Record
+;;
+;; `PinboardRSSService` implements the `BookmarkService` protocol for the
+;; Pinboard RSS feeds. No authentication is required.
+
+(defrecord PinboardRSSService []
+  BookmarkService
+  (bookmarks [srv opts] (rss-bookmarks opts))
+  (popular [srv] (rss-popular))
+  (recent [srv] (rss-recent))
+  (add-bookmark [srv url desc opts] (login-required))
+  (bookmark-info [srv url] (login-required))
+  (delete-bookmark [srv url] (login-required))
+  (suggested-tags [srv url] (login-required))
+  (last-update [srv] (login-required)))
+
+(defn init-pinboard
+  "Create a service handle for [Pinboard](http://pinboard.in).
 
   When called without arguments, the [RSS
   API](http://pinboard.in/howto/#rss) is used which means that only a
@@ -170,6 +236,6 @@
   When you pass a username and password, the full
   [API](http://pinboard.in/howto/#api) (which is modeled on the
   Delicious API) is used so that all functions are available."
-		      ([] nil)
-		      ([user passwd] (PinboardService. user passwd)))
+  ([] (PinboardRSSService.))
+  ([user passwd] (PinboardService. user passwd)))
 
