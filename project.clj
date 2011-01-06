@@ -5,6 +5,6 @@ It provides both annonymous and named access. In the former case the APIs
 do not allow as many features as in the latter one."
   :dependencies [[org.clojure/clojure "1.2.0"]
                  [org.clojure/clojure-contrib "1.2.0"]
-		 [webmine "0.1.1"]
+                 [clj-http "0.1.3"]
 		 [midje "0.9.0RC1"]]
   :dev-dependencies [[marginalia "0.3.0"]])
