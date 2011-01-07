@@ -1,8 +1,7 @@
 (ns clj-bookmarks.pinboard
   "The `pinboard` namespace provides the implementation of the
   [Pinboard API](http://pinboard.in/howto/#api)."
-  (:use [clj-bookmarks.core]
-	[midje.sweet])
+  (:use [clj-bookmarks.core])
   (:require [clj-http.client :as http]
 	    [clojure.xml :as xml]
 	    [clojure.zip :as zip]
