@@ -8,19 +8,29 @@ in the latter one.
 
 ## Usage
 
-The library offers a common API for the different bookmarking
-services. Before accessing any of the data, you need to initialize the
-service you want to use and get a service handle.
+The library offers a common APIs for the bookmarking services -- one
+set of functions for authenticated access and another set that can be
+used anonymously.
 
-### Pinboard ###
+Before accessing any of the data, you need to initialize the service
+you want to use and get a service handle.
 
-For Pinboard use the following:
+### Anonymous Access ###
+
+In order to create a service handle for the anonymous APIs, call a
+factory function without arguments. For Pinboard use the following:
 
     (use '[clj-bookmarks core pinboard])
     (def pb (init-pinboard))
 
-This creates a handle for the limited authenticated API. To get a list
-of the most popular bookmarks, call
+For Delicious:
+
+    (use '[clj-bookmarks core delicious])
+    (def del (init-delicious))
+
+This creates a handle for the limited authenticated API.
+(The following examples all use Pinboard, but they work the same with
+Delicious.)  To get a list of the most popular bookmarks, call
 
     (popular pb)
 
@@ -32,32 +42,63 @@ keys:
 * `desc`: the description
 * `date`: the time when the bookmark was saved
 
-When you want the bookmarks by a given user tagged "clojure" use the
-`bookmarks` function:
+The `recent` function gives you the list of all recetly saved
+bookmarks. 
+
+You can also query bookmarks by user and by tags.  When you want the
+bookmarks by user the user "jgre" tagged "clojure" use the `bookmarks`
+function:
 
     (bookmarks pb {:user "jgre" :tags "clojure"})
 
-The result has the form described above. You can also request the
+The result has the structure described above. You can also request the
 bookmarks tagged "clojure" *and* "java":
 
     (bookmarks pb {:user "jgre" :tags ["java" "clojure"]})
     
+### Authenticated Access ###
+
 To use the authenticated API, you pass your username and password to
-`init-pinboard`. The `bookmarks` function behaves slightly different
-in this implementation: when you specify a list of tags, it gives you
-the bookmarks that have at least one of the tags. In the previous
-example you would get the bookmarks tagged "clojure" *or* "java".
+`init-pinboard` or `init-delicious`.
+
+    (def del (init-delicious "USER" "PASSWD"))
+
+The authenticated API has a `query-bookmarks` function that behaves
+simliar to `bookmarks`, but they have some differences. Moreover,
+Pinboard implements the service differently than Delicious. When you
+specify a list of tags, Pinboard gives you the bookmarks that have at least
+one of the tags. Delicious gives you the bookmarks that have all of
+the tags. In the previous example you would get the bookmarks
+tagged "clojure" *or* "java" from Pinboard, but those tagged "clojure"
+*and* "java" from Delicious.
+
+`query-bookmarks` also provides some additional options compared to
+`bookmarks`:
+
+* `fromdt`: only return bookmarks saved on this date or later
+* `todt`: only return bookmarks saved on this date or earlier
+* `offset`: start returning bookmarks this many results into the set
+* `limit`: return this many results
+
+The result structure has more fields too with this API:
+
+* `url`: the bookmarked URL
+* `tags`: the tags assigned to this bookmark
+* `desc`: the description
+* `extended`: Notes about the bookmark
+* `date`: the time when the bookmark was saved
+* `others`: the number of users who bookmarked the URL
+* `hash`: the hash of the URL
+* `meta`: a signature that changes when the bookmark is updated
 
 With the authenticated API you have more functions at you
 disposal. With `add-bookmark` you can save new bookmarks, you can
 delete bookmarks with `delete-bookmarks`, and you can get suggestions
-for how to tag a given URL with `suggested-tags`. For a complete list
-of available functions, see FIXME.
-
-### Delicious ###
-
-Access to delicious behaves analogously. Instead of `init-pinboard`,
-use `init-delicious`.
+for how to tag a given URL with `suggested-tags`. `bookmark-info`
+gives you the bookmark data structure for a given URL. When your
+application caches a user's bookmarks, you can use `last-update` to
+find out when the last update on the account happened to determine
+when to reload.
 
 ## Installation
 

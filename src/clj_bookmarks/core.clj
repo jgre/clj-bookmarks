@@ -3,33 +3,34 @@
   bookmarking services."
   )
 
-;; ## Factory functions
-;;
-;; For each service there is a factory function (e.g. `init-pinboard`)
-;; that returns a service handle. The handle is used for all
-;; subsequent calls to the other functions.
+;; ## The AnonymousBookmarkService protocol
 
-(defn init-delicious
-  "Create a service handle for [Delicious](http://delicious.com).
-
-  When called without arguments, the [RSS
-  API](http://www.delicious.com/help/feeds) is used which means that only a
-  limited number of bookmarks will be shown. It also means that all
-  writing functions will fail.
-
-  When you pass a username and password, the full
-  [API](http://www.delicious.com/help/api) is used so that all
-  functions are available."
-  ([] nil)
-  ([user passwd] nil))
-
-;; ## The BookmarkService protocol
-
-(defprotocol BookmarkService
-  "The common functions that implement calls to the different
-  bookmarking APIs are bundled in the `BookmarkService` protocol."
+(defprotocol AnonymousBookmarkService
+  "The common functions for accessing a bookmark service anonymously
+  provided through the `AnonymousBookmarkService` protocol."
   (bookmarks [srv opts]
 	     "The `bookmarks` function retrieves bookmarks from the
+	     service according to criteria specified in `opts`:
+
+             * `user`: only return bookmarks saved by this user
+             * `tags`: only return bookmarks tagged with an element of this
+                       seq
+
+             At least one option must be specified.")
+  (popular [srv]
+	   "To get the most popular bookmarks from the service, call
+           `popular`.")
+  (recent [srv]
+	  "To get the most recent bookmarks saved to the service by
+          all users, call `recent`."))
+
+;; ## The AuthenticatedBookmarkService protocol
+
+(defprotocol AuthenticatedBookmarkService
+  "The common functions that implement calls to the different
+  bookmarking APIs are bundled in the `BookmarkService` protocol."
+  (query-bookmarks [srv opts]
+	     "The `query-bookmarks` function retrieves bookmarks from the
 	     service according to criteria specified in `opts`:
 
              * `user`: only return bookmarks saved by this user
@@ -43,12 +44,6 @@
 
              When called with an empty `opts` map, `bookmarks` returns
              the 15 most recent bookmarks saved by the user.")
-  (popular [srv]
-	   "To get the most popular bookmarks from the service call
-           `popular`.")
-  (recent [srv]
-	  "To get the most recent bookmarks saved to the service by
-          all users call `recent`.")
   (add-bookmark [srv url desc opts]
 		"Bookmarks can be added by calling `add-bookmark` for
                 the service, passing a URL, a description and a map of
@@ -61,9 +56,6 @@
                 * `shared`: make the item public (default: true)
                 * `replace`: replace a bookmark if the given URL has
                              already been saved (default: true)")
-  (bookmark-info [srv url]
-		 "Call `bookmark-info` to retrieve the bookmark
-                 structure for `url`.")
   (delete-bookmark [srv url]
 		   "The `delete-bookmark` function deletes the bookmark
                    for the given URL.")
@@ -71,6 +63,9 @@
 		  "You can get a vector of suggestions for tags for a
                   given URL from the service using the
                   `suggested-tags` function.")
+  (bookmark-info [srv url]
+		 "Call `bookmark-info` to retrieve the bookmark
+                 structure for `url`.")
   (last-update [srv]
 		"Use `last-update` to find the timestamp when the user
 		last updated his bookmarks."))
@@ -89,4 +84,6 @@
 ;; * `hash`: the hash of the URL
 ;; * `meta`: a signature that changes when the bookmark is updated
 ;;
-;; Only `url` is always set.
+;; Only `url` is always set. Functions from the anonymous APIs never set
+;; `extended`, `others`, `hash`, and `meta`.
+
