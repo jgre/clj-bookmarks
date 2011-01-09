@@ -90,3 +90,64 @@
 
 (fact
  (parse-update update-xml) => #(= (.getTime %) 1294082109000))
+
+(def recent-xml "
+<?xml version='1.0' encoding='UTF-8'?>
+<rss version='2.0' xmlns:atom='http://www.w3.org/2005/Atom' xmlns:content='http://purl.org/rss/1.0/modules/content/' xmlns:wfw='http://wellformedweb.org/CommentAPI/' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#' xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://web.resource.org/cc/'>
+  <channel>
+    <title>Delicious popular</title>
+    <link>http://www.delicious.com/popular</link>
+    <description>the latest popular bookmarks</description>
+    <atom:link rel='self' type='application/rss+xml' href='http://feeds.delicious.com/v2/rss/popular/'/>
+    <item>
+      <title>Top 40: Exceptional Images from the Decay Photography Challenge</title>
+      <pubDate>Sat, 08 Jan 2011 21:46:20 +0000</pubDate>
+      <guid isPermaLink='false'>http://www.delicious.com/url/5b15c9c2cbf49f9f7bd84853198576b1#hrvojecar</guid>
+      <link>http://top-lists.info/top-40-exceptional-images-from-the-decay-photography-challenge</link>
+      <dc:creator><![CDATA[hrvojecar]]></dc:creator>
+      <comments>http://www.delicious.com/url/5b15c9c2cbf49f9f7bd84853198576b1</comments>
+      <wfw:commentRss>http://feeds.delicious.com/v2/rss/url/5b15c9c2cbf49f9f7bd84853198576b1</wfw:commentRss>
+      <source url='http://feeds.delicious.com/v2/rss/hrvojecar'>hrvojecar's bookmarks</source>
+      <category domain='http://www.delicious.com/hrvojecar/'>challenge</category>
+      <category domain='http://www.delicious.com/hrvojecar/'>decay</category>
+      <category domain='http://www.delicious.com/hrvojecar/'>photography</category>
+      <category domain='http://www.delicious.com/hrvojecar/'>top</category>
+      <category domain='http://www.delicious.com/hrvojecar/'>image</category>
+      <category domain='http://www.delicious.com/hrvojecar/'>photos</category>
+      <category domain='http://www.delicious.com/hrvojecar/'>images</category>
+    </item>
+    <item>
+      <title>mir.aculo.us JavaScript with Thomas Fuchs » DOM Monster Bookmarklet</title>
+      <pubDate>Sat, 08 Jan 2011 16:32:06 +0000</pubDate>
+      <guid isPermaLink='false'>http://www.delicious.com/url/3577a509a90511c9103ed945d3002c9d#markgibaud</guid>
+      <link>http://mir.aculo.us/dom-monster/</link>
+      <dc:creator><![CDATA[markgibaud]]></dc:creator>
+      <comments>http://www.delicious.com/url/3577a509a90511c9103ed945d3002c9d</comments>
+      <wfw:commentRss>http://feeds.delicious.com/v2/rss/url/3577a509a90511c9103ed945d3002c9d</wfw:commentRss>
+      <source url='http://feeds.delicious.com/v2/rss/markgibaud'>markgibaud's bookmarks</source>
+      <category domain='http://www.delicious.com/markgibaud/'>javascript</category>
+      <category domain='http://www.delicious.com/markgibaud/'>performance</category>
+      <category domain='http://www.delicious.com/markgibaud/'>dom</category>
+      <category domain='http://www.delicious.com/markgibaud/'>tools</category>
+      <category domain='http://www.delicious.com/markgibaud/'>html</category>
+      <category domain='http://www.delicious.com/markgibaud/'>webdev</category>
+      <category domain='http://www.delicious.com/markgibaud/'>bookmarklet</category>
+      <category domain='http://www.delicious.com/markgibaud/'>debugging</category>
+      <category domain='http://www.delicious.com/markgibaud/'>webdesign</category>
+      <category domain='http://www.delicious.com/markgibaud/'>js</category>
+    </item>
+  </channel>
+</rss>
+")
+
+(fact
+ (parse-rss-posts recent-xml) =>
+ (just [(contains {:url "http://top-lists.info/top-40-exceptional-images-from-the-decay-photography-challenge"
+		   :desc "Top 40: Exceptional Images from the Decay Photography Challenge"
+		   :tags ["challenge" "decay" "photography" "top" "image" "photos" "images"]})
+	(contains {:url "http://mir.aculo.us/dom-monster/"})]))
+
+(fact
+ ;; Dec 28 06:55:53 UTC 2010
+ (.getTime (parse-rss-date "Sat, 08 Jan 2011 16:32:06 +0000")) =>
+ 1294504326000)

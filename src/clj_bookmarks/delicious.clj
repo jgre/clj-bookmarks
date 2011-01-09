@@ -6,7 +6,8 @@
 	    [clojure.contrib.zip-filter.xml :as zfx]
 	    [clojure.contrib.zip-filter :as zf]
 	    [clojure.string :as string])
-  (:import [java.util Date]))
+  (:import [java.util Date Locale]
+	   [java.text SimpleDateFormat]))
 
 ;; ## The Delicious v1 API
 ;;
@@ -191,6 +192,99 @@
   (delete-bookmark [srv url] (posts-delete srv url))
   (suggested-tags [srv url] (posts-suggest srv url))
   (last-update [srv] (posts-update srv)))
+
+;; ## The Delicious RSS Feeds
+;;
+;; The functions here are responsible for getting data out of the
+;; Delicious RSS feeds.
+
+(def *del-base-rss-url* "http://feeds.delicious.com/v2/rss/")
+
+;; ### Parser Functions
+
+(defn rss-date-format
+  "Create a `SimpleDateFormat` object for the format used by the
+  Delicious RSS feeds.
+
+  As the format uses names for weekday and months, we need to set the
+  locale to US."
+  []
+  (SimpleDateFormat. "EEE',' dd MMM yyyy HH:mm:ss Z" (Locale/US)))
+
+(defn parse-rss-date
+  "Parse a date string in the format used by the Delicious RSS feeds
+  into a `Date` object."
+  [input]
+  (.parse (rss-date-format) input))
+
+(defn parse-rss-posts
+  "Parse a string of RSS data from Delicious into a list of posts.
+
+  The input is turned into a zipper which we use to extract the data
+  from the `item` elements. The fields we need are in sub-elements:
+
+  * `link`: put verbatimly into `url` in the result
+  * `category`: these are the tags which we gather into a vector
+  * `title`: we call this `desc`
+  * `pubDate`: this is parsed into a `Date` object and called `date`."
+  [input]
+  (zfx/xml-> (str->xmlzip input) :channel :item
+	     (fn [loc] {:url (zfx/xml1-> loc :link zfx/text)
+			:tags (vec
+			       (zfx/xml-> loc :category zfx/text))
+			:desc (zfx/xml1-> loc :title zfx/text)
+			:date (parse-rss-date
+				  (zfx/xml1-> loc :pubDate zfx/text))})))
+
+;; ### Request Functions
+
+(defn rss-popular
+  "Get the currently popular bookmars using the Pinboard RSS feeds.
+
+  We send a GET request to `popular` and parse the response body into
+  a seq of bookmarks."
+  []
+  (-> (http/get (str *del-base-rss-url* "popular/"))
+      :body
+      parse-rss-posts))
+
+(defn rss-recent
+  "Get the recent bookmars using the Delicious RSS feeds.
+
+  We send a GET request to `recent` and parse the response body into
+  a seq of bookmarks."
+  []
+  (-> (http/get (str *del-base-rss-url* "recent/"))
+      :body
+      parse-rss-posts))
+
+(defn rss-bookmarks
+  "The `rss-bookmarks` function uses the RSS feeds to perform a query
+  for shared bookmarks.
+
+  The parameter map can include `tags` and `user`. `tags` can be
+  either a string or a vector of string. The map must not be empty.
+
+  This function sends a GET request with the path `/USER/TAG+TAG` or
+  `/tag/TAG+TAG` when no user is specified."
+  [{:keys [tags user]}]
+  (let [tags (if (string? tags) tags (string/join "+" tags))
+	path (string/join "/" (filter (comp not string/blank?)
+				      [(or user "tag") tags]))]
+    (-> (http/get (str *del-base-rss-url* path))
+	:body
+	parse-rss-posts)))
+
+;; ## The DeliciousRSSService Record
+;;
+;; `DeliciousRSSService` implements the `BookmarkService` protocol for the
+;; Delicious RSS feeds. No authentication is required.
+
+(defrecord DeliciousRSSService []
+  AnonymousBookmarkService
+  (bookmarks [srv opts] (rss-bookmarks opts))
+  (popular [srv] (rss-popular))
+  (recent [srv] (rss-recent)))
 
 (def *del-base-api-url* "https://api.del.icio.us/v1/")
 

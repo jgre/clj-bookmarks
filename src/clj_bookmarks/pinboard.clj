@@ -1,15 +1,24 @@
 (ns clj-bookmarks.pinboard
   "The `pinboard` namespace provides the implementation of the
   [Pinboard API](http://pinboard.in/howto/#api)."
-  (:use [clj-bookmarks core util delicious])
+  (:use [clj-bookmarks core util])
   (:require [clj-http.client :as http]
 	    [clojure.contrib.zip-filter.xml :as zfx]
+	    [clj-bookmarks.delicious :as del]
 	    [clojure.string :as string])
   (:import [java.util TimeZone Date]
 	   [java.text SimpleDateFormat]))
 
-(def *pb-base-rss-url* "http://feeds.pinboard.in/rss/")
 (def *pb-base-api-url* "https://api.pinboard.in/v1/")
+
+;; ## The Pinboard RSS Feeds
+;;
+;; The functions here are responsible for getting data out of the
+;; Pinboard RSS feeds.
+
+(def *pb-base-rss-url* "http://feeds.pinboard.in/rss/")
+
+;; ### Parser Functions
 
 (defn rss-date-format
   "Create a `SimpleDateFormat` object for the format used by the
@@ -38,7 +47,7 @@
   The input is turned into a zipper which we use to extract the data
   from the `item` elements. The fields we need are in sub-elements:
 
-  * `url`: put verbatimly into the result
+  * `link`: put verbatimly into `url` in the result
   * `dc:subject`: these are the tags which we split into a vector
   * `description`: we call this `desc`
   * `dc:date`: this is parsed into a `Date` object and called `date`."
@@ -50,7 +59,9 @@
 		       :desc (zfx/xml1-> loc :description zfx/text)
 		       :date (parse-rss-date
 			      (zfx/xml1-> loc :dc:date zfx/text))})))
-		       
+
+;; ### Request Functions
+
 (defn rss-popular
   "Get the currently popular bookmars using the Pinboard RSS feeds.
 
@@ -109,5 +120,5 @@
   [API](http://pinboard.in/howto/#api) (which is modeled on the
   Delicious API) is used."
   ([] (PinboardRSSService.))
-  ([user passwd] (init-delicious *pb-base-api-url* user passwd)))
+  ([user passwd] (del/init-delicious *pb-base-api-url* user passwd)))
 
