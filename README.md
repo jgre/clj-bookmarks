@@ -102,7 +102,17 @@ when to reload.
 
 ## Installation
 
-FIXME
+With leiningen, add this to you `project.clj`:
+
+    [clj-bookmarks "0.1.0"]
+
+For Maven, add this to your `pom.xml`:
+
+    <dependency>
+        <groupId>clj-bookmarks</groupId>
+        <artifactId>clj-bookmarks</artifactId>
+       <version>0.1.0</version>
+    </dependency>
 
 ## License
 
